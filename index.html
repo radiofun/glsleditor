@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shader Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1e1e1e;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .editor-panel {
+            width: 50%;
+            border-right: 2px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .shader-editor {
+            display: flex;
+            flex-direction: column;
+            min-height: 100px;
+        }
+        
+        .shader-editor:first-child {
+            flex: none;
+        }
+        
+        .shader-editor:last-child {
+            flex: none;
+        }
+        
+        .resize-handle {
+            height: 3px;
+            background: #444;
+            cursor: ns-resize;
+            border-top: 1px solid #555;
+            border-bottom: 1px solid #333;
+            transition: background-color 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .resize-handle:hover {
+            background: #666;
+        }
+        
+        .resize-handle:active {
+            background: #777;
+        }
+        
+        .canvas-panel {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            background: #262626;
+        }
+        
+        .panel-header {
+            background: #333;
+            padding: 10px 15px;
+            border-bottom: 1px solid #444;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .editor-container {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        
+        .CodeMirror {
+            height: 100%;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #canvas {
+            max-width: 100%;
+            max-height: 100%;
+            border: 1px solid #555;
+            background: #000;
+        }
+        
+        .error-display {
+            background: #441111;
+            color: #ff6666;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+            border-top: 1px solid #666;
+        }
+        
+        .controls {
+            background: #2a2a2a;
+            padding: 10px 15px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        #title-input {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            padding: 0;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            min-width: 200px;
+            flex: 1;
+            margin-right: 15px;
+            cursor: text;
+        }
+        
+        #title-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 8px;
+            border-radius: 3px;
+        }
+        
+        #title-input::placeholder {
+            color: #888;
+            font-style: italic;
+        }
+        
+        .btn {
+            background: transparent;
+            color: #ffffff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn.reset:hover {
+            background: rgba(215, 58, 73, 0.2);
+            color: #ff6b6b;
+        }
+        
+        .btn.save:hover {
+            background: rgba(40, 167, 69, 0.2);
+            color: #51cf66;
+        }
+        
+        .btn.compile:hover {
+            background: rgba(0, 122, 204, 0.2);
+            color: #339af0;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-panel">
+            <div class="controls">
+                <input type="text" id="title-input" placeholder="Enter title..." value="My Shader">
+                <button class="btn compile" id="compile-btn">Compile</button>
+                <button class="btn reset" id="reset-btn">Reset</button>
+            </div>
+            <div class="shader-editor" id="vertex-editor">
+                <div class="panel-header">Vertex Shader</div>
+                <div class="editor-container">
+                    <textarea id="vertex-shader-code"></textarea>
+                </div>
+            </div>
+            <div class="resize-handle" id="resize-handle"></div>
+            <div class="shader-editor" id="fragment-editor">
+                <div class="panel-header">Fragment Shader</div>
+                <div class="editor-container">
+                    <textarea id="fragment-shader-code"></textarea>
+                </div>
+            </div>
+            <div id="error-display" class="error-display" style="display: none;"></div>
+        </div>
+        <div class="canvas-panel">
+            <div class="panel-header" style="width: 100%; text-align: center;">Output</div>
+            <div class="canvas-container">
+                <canvas id="canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
